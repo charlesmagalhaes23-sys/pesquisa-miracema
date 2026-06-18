@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Pesquisa Eleitoral — Miracema</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4f8; min-height: 100vh; padding: 1rem; }
+  .screen { display: none; max-width: 480px; margin: 0 auto; }
+  .screen.active { display: block; }
+
+  .header { background: #1a4a8a; color: white; padding: 1.1rem 1.25rem; border-radius: 14px; margin-bottom: 1.25rem; }
+  .header h1 { font-size: 17px; font-weight: 600; }
+  .header p { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+  .progress-bar { background: rgba(255,255,255,0.3); height: 4px; border-radius: 2px; margin-top: 10px; }
+  .progress-fill { background: white; height: 4px; border-radius: 2px; transition: width 0.3s; }
+
+  .card { background: white; border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+  .question-num { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .question-num.vermelho { color: #a32d2d; }
+  .question-text { font-size: 15px; font-weight: 600; color: #1a1a1a; line-height: 1.45; margin-bottom: 1rem; }
+
+  .option-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px; margin-bottom: 8px; border: 1.5px solid #e0e0e0; border-radius: 10px; background: white; color: #1a1a1a; font-size: 14px; cursor: pointer; text-align: left; transition: all 0.15s; font-family: inherit; }
+  .option-btn:active { transform: scale(0.98); }
+  .option-btn.sel-azul { border-color: #1a4a8a; background: #eaf1fb; color: #0c3470; font-weight: 600; }
+  .option-btn.sel-vermelho { border-color: #a32d2d; background: #fdf0f0; color: #6b1a1a; font-weight: 600; }
+  .option-btn.sel-roxo { border-color: #533ab7; background: #f0eefb; color: #32227a; font-weight: 600; }
+  .option-btn.sel-verde { border-color: #0f6e56; background: #e8f5f1; color: #084d3b; font-weight: 600; }
+  .option-circle { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ccc; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .sel-azul .option-circle { background: #1a4a8a; border-color: #1a4a8a; }
+  .sel-vermelho .option-circle { background: #a32d2d; border-color: #a32d2d; }
+  .sel-roxo .option-circle { background: #533ab7; border-color: #533ab7; }
+  .sel-verde .option-circle { background: #0f6e56; border-color: #0f6e56; }
+  .option-circle::after { content:''; width:8px; height:8px; background:white; border-radius:50%; display:none; }
+  .sel-azul .option-circle::after,
+  .sel-vermelho .option-circle::after,
+  .sel-roxo .option-circle::after,
+  .sel-verde .option-circle::after { display:block; }
+
+  .nav-row { display: flex; gap: 10px; margin-top: 1rem; }
+  .btn-back { padding: 14px 18px; background: white; color: #444; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 16px; cursor: pointer; font-family: inherit; }
+  .btn-next { flex: 1; padding: 14px; background: #1a4a8a; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn-next:active { opacity: 0.9; transform: scale(0.98); }
+  .hint { font-size: 12px; color: #999; text-align: center; margin-top: 8px; }
+
+  .stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+  .stat-box { background: white; border-radius: 12px; padding: 14px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+  .stat-box .val { font-size: 26px; font-weight: 700; color: #1a4a8a; }
+  .stat-box .lbl { font-size: 11px; color: #888; margin-top: 3px; }
+
+  .btn-full { width: 100%; padding: 14px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; border: none; margin-bottom: 10px; }
+  .btn-azul { background: #1a4a8a; color: white; }
+  .btn-cinza { background: white; color: #444; border: 1.5px solid #e0e0e0 !important; }
+  .btn-danger { background: #fdf0f0; color: #a32d2d; border: 1.5px solid #f7c1c1 !important; }
+
+  .res-tabs { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .res-tab { padding: 7px 13px; border-radius: 20px; font-size: 13px; cursor: pointer; border: 1.5px solid #e0e0e0; background: white; color: #666; font-family: inherit; font-weight: 500; }
+  .res-tab.active { background: #1a4a8a; color: white; border-color: #1a4a8a; }
+
+  .result-section { background: white; border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+  .result-section h3 { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; }
+  .bar-item { margin-bottom: 12px; }
+  .bar-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+  .bar-label .nome { color: #1a1a1a; font-weight: 500; flex:1; margin-right:8px; }
+  .bar-label .pct { color: #888; white-space:nowrap; }
+  .bar-track { background: #f0f0f0; border-radius: 4px; height: 9px; overflow: hidden; }
+  .bar-fill { height: 9px; border-radius: 4px; transition: width 0.6s ease; }
+
+  .header-verde { background: #0f6e56; }
+  .empty-msg { text-align: center; color: #aaa; font-size: 14px; padding: 2rem 0; }
+</style>
+</head>
+<body>
+
+<!-- TELA INICIAL -->
+<div id="screen-intro" class="screen active">
+  <div class="header">
+    <h1>Pesquisa Eleitoral</h1>
+    <p>Miracema — 2026 · Campo</p>
+  </div>
+  <div class="card">
+    <p style="font-size:14px;color:#555;line-height:1.6">Preencha um formulário por entrevistado. A ordem dos candidatos é <strong>alternada automaticamente</strong> a cada entrevista para evitar viés de posição.</p>
+  </div>
+  <div class="stat-row">
+    <div class="stat-box"><div class="val" id="intro-total">0</div><div class="lbl">Total de entrevistas</div></div>
+    <div class="stat-box"><div class="val" id="intro-hoje">0</div><div class="lbl">Hoje</div></div>
+  </div>
+  <button class="btn-full btn-azul" onclick="startInterview()">▶ Nova entrevista</button>
+  <button class="btn-full btn-cinza" style="border:1.5px solid #e0e0e0" onclick="showResults()">📊 Ver resultados</button>
+</div>
+
+<!-- TELA FORMULÁRIO -->
+<div id="screen-form" class="screen">
+  <div class="header">
+    <h1>Entrevista em andamento</h1>
+    <p id="form-subtitle">Pergunta 1 de 5</p>
+    <div class="progress-bar"><div class="progress-fill" id="progress" style="width:20%"></div></div>
+  </div>
+  <div id="form-body"></div>
+  <div class="nav-row">
+    <button class="btn-back" onclick="prevQ()">←</button>
+    <button class="btn-next" id="btn-next" onclick="nextQ()">Próxima →</button>
+  </div>
+  <p class="hint" id="nav-hint"></p>
+</div>
+
+<!-- TELA SALVO -->
+<div id="screen-done" class="screen">
+  <div class="header header-verde">
+    <h1>✓ Entrevista salva!</h1>
+    <p id="done-count"></p>
+  </div>
+  <div class="card">
+    <p style="font-size:14px;color:#555;line-height:1.6">Dados registrados com sucesso neste dispositivo.</p>
+  </div>
+  <button class="btn-full btn-azul" onclick="startInterview()">▶ Nova entrevista</button>
+  <button class="btn-full btn-cinza" style="border:1.5px solid #e0e0e0" onclick="showResults()">📊 Ver resultados</button>
+</div>
+
+<!-- TELA RESULTADOS -->
+<div id="screen-results" class="screen">
+  <div class="header">
+    <h1>Resultados acumulados</h1>
+    <p id="res-subtitle">0 entrevistas</p>
+  </div>
+  <div class="res-tabs">
+    <button class="res-tab active" onclick="switchTab('governo',this)">Governo</button>
+    <button class="res-tab" onclick="switchTab('voto-sim',this)">Votaria</button>
+    <button class="res-tab" onclick="switchTab('voto-nao',this)">Não votaria</button>
+    <button class="res-tab" onclick="switchTab('vereador',this)">Vereador</button>
+    <button class="res-tab" onclick="switchTab('secretario',this)">Secretário</button>
+  </div>
+  <div id="results-body"></div>
+  <button class="btn-full btn-cinza" style="border:1.5px solid #e0e0e0;margin-top:0.5rem" onclick="showScreen('screen-intro')">← Voltar</button>
+  <button class="btn-full btn-danger" style="border:1.5px solid #f7c1c1" onclick="confirmReset()">🗑 Zerar todos os dados</button>
+</div>
+
+<script>
+const STORAGE_KEY = 'pesquisa_mrc_v2';
+
+const CANDIDATOS = ['Charles Magalhães','Alessandra Freire','Hugo Fernandes','Maurício Vô','Juedyr Orsay','NS/NR'];
+
+const VEREADORES = [
+  'Hugo Fernandes (PL)','Leo Gripa (PP)','Fabrício Xavier (PDT)',
+  'Dr. Leandro (Rep)','Maguinho (PL)','Allan Linhares (PSD)',
+  'Higor Matheus (PL)','Waltinho Sol e Neve (Rep)','Jocimar Vaz Freire (Rep)',
+  'Jorge Oneide (PSD)','Marcus Felipe (PP)','Aimoré','NS/NR'
+];
+
+const SECRETARIOS = [
+  'Adriano Hassel — Governo',
+  'Andrea Siqueira — Saúde',
+  'Diego Mello — Educação',
+  'Vinícius Pestana — Obras',
+  'Luisa Pestana — Desenvolvimento Social',
+  'Bruno Machado — Cultura e Turismo',
+  'Caio Rocha — Esporte e Juventude',
+  'Gleice Barros — Administração',
+  'Luiz Berardi — Fazenda',
+  'Willian Lugão — Meio Ambiente',
+  'Fábio Gomes — Defesa Civil',
+  'Sérgio Rocha — Planejamento',
+  'NS/NR'
+];
+
+const GOV_OPTS = ['Excelente','Bom','Razoável','Ruim','Péssimo','NS/NR'];
+
+const PERGUNTAS = [
+  { id:'q1', texto:'Na sua opinião, o atual governo da Prefeita Alessandra e do Vice-prefeito Maurício Vô é:', opcoes: GOV_OPTS, cor:'azul', rotativa:false },
+  { id:'q2', texto:'Se a eleição fosse hoje, em qual destes nomes você VOTARIA para prefeito?', opcoes: CANDIDATOS, cor:'azul', rotativa:true },
+  { id:'q3', texto:'E em qual destes nomes você NÃO VOTARIA de jeito nenhum?', opcoes: CANDIDATOS, cor:'vermelho', rotativa:true },
+  { id:'q4', texto:'Qual vereador tem se destacado com o melhor trabalho na Câmara?', opcoes: VEREADORES, cor:'roxo', rotativa:false },
+  { id:'q5', texto:'Qual é o melhor Secretário Municipal, em sua opinião?', opcoes: SECRETARIOS, cor:'verde', rotativa:false },
+];
+
+let data = { entrevistas:[], hoje:0, dataHoje:'' };
+let current = {};
+let currentQ = 0;
+let ordemAtual = [];
+let activeTab = 'governo';
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i>0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function rotacionar(arr) {
+  const sem = arr.filter(x => x !== 'NS/NR');
+  return [...shuffle(sem), 'NS/NR'];
+}
+
+function loadData() {
+  try { const r = localStorage.getItem(STORAGE_KEY); if(r) data=JSON.parse(r); } catch(e){}
+  const hoje = new Date().toDateString();
+  if (data.dataHoje !== hoje) { data.dataHoje=hoje; data.hoje=0; }
+}
+
+function saveData() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e){}
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function updateIntroStats() {
+  document.getElementById('intro-total').textContent = data.entrevistas.length;
+  document.getElementById('intro-hoje').textContent = data.hoje;
+}
+
+function startInterview() {
+  ordemAtual = rotacionar(CANDIDATOS);
+  current = { q1:null, q2:null, q3:null, q4:null, q5:null };
+  currentQ = 0;
+  renderQ();
+  showScreen('screen-form');
+}
+
+function getOpcoes(q) {
+  return q.rotativa ? ordemAtual : q.opcoes;
+}
+
+function renderQ() {
+  const q = PERGUNTAS[currentQ];
+  const pct = ((currentQ+1)/PERGUNTAS.length)*100;
+  document.getElementById('progress').style.width = pct+'%';
+  document.getElementById('form-subtitle').textContent = `Pergunta ${currentQ+1} de ${PERGUNTAS.length}`;
+  document.getElementById('btn-next').textContent = currentQ===PERGUNTAS.length-1 ? '✓ Salvar entrevista' : 'Próxima →';
+  document.getElementById('nav-hint').textContent = currentQ===PERGUNTAS.length-1 ? 'Última pergunta' : '';
+
+  const cor = q.cor;
+  const isVermelho = cor==='vermelho';
+  const opcoes = getOpcoes(q);
+
+  let html = `<div class="card">`;
+  html += `<div class="question-num ${isVermelho?'vermelho':''}">${isVermelho?'⚠ Voto negativo —':''} Pergunta ${currentQ+1} de ${PERGUNTAS.length}</div>`;
+  html += `<div class="question-text">${q.texto}</div>`;
+
+  opcoes.forEach(op => {
+    const sel = current[q.id]===op ? `sel-${cor}` : '';
+    const opEsc = op.replace(/'/g,"\\'");
+    html += `<button class="option-btn ${sel}" onclick="selectOp('${q.id}','${opEsc}',this,'sel-${cor}')">
+      <div class="option-circle"></div>${op}
+    </button>`;
+  });
+  html += `</div>`;
+  document.getElementById('form-body').innerHTML = html;
+}
+
+function selectOp(qid, val, btn, selClass) {
+  current[qid] = val;
+  document.querySelectorAll('.option-btn').forEach(b=>{
+    b.classList.remove('sel-azul','sel-vermelho','sel-roxo','sel-verde');
+  });
+  btn.classList.add(selClass);
+}
+
+function nextQ() {
+  const q = PERGUNTAS[currentQ];
+  if (!current[q.id]) { alert('Por favor, selecione uma opção antes de continuar.'); return; }
+  if (currentQ===PERGUNTAS.length-1) { saveInterview(); return; }
+  currentQ++;
+  renderQ();
+}
+
+function prevQ() {
+  if (currentQ===0) { showScreen('screen-intro'); return; }
+  currentQ--;
+  renderQ();
+}
+
+function saveInterview() {
+  data.entrevistas.push({ ts:Date.now(), ordem:ordemAtual.join('|'), ...current });
+  data.hoje++;
+  saveData();
+  document.getElementById('done-count').textContent = `Total: ${data.entrevistas.length} entrevista(s) registrada(s)`;
+  showScreen('screen-done');
+}
+
+function switchTab(tab, btn) {
+  activeTab = tab;
+  document.querySelectorAll('.res-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  renderResultsBody();
+}
+
+function showResults() {
+  const n = data.entrevistas.length;
+  document.getElementById('res-subtitle').textContent = `${n} entrevista(s) registrada(s)`;
+  document.querySelectorAll('.res-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  activeTab = 'governo';
+  renderResultsBody();
+  showScreen('screen-results');
+}
+
+function renderResultsBody() {
+  const n = data.entrevistas.length;
+  if (n===0) {
+    document.getElementById('results-body').innerHTML = '<div class="empty-msg">Nenhuma entrevista realizada ainda.</div>';
+    return;
+  }
+  let html = '';
+  const cores = { governo:'#1a4a8a', 'voto-sim':'#0f6e56', 'voto-nao':'#a32d2d', vereador:'#533ab7', secretario:'#185fa5' };
+  const titulos = { governo:'Avaliação do governo', 'voto-sim':'Em quem VOTARIA para prefeito', 'voto-nao':'Em quem NÃO VOTARIA', vereador:'Vereador destaque', secretario:'Secretário destaque' };
+  const mapa = { governo:['q1',GOV_OPTS], 'voto-sim':['q2',CANDIDATOS], 'voto-nao':['q3',CANDIDATOS], vereador:['q4',VEREADORES], secretario:['q5',SECRETARIOS] };
+  const [qid, opcoes] = mapa[activeTab];
+  const cor = cores[activeTab];
+  const titulo = titulos[activeTab];
+
+  const counts = {};
+  opcoes.forEach(op=>counts[op]=0);
+  data.entrevistas.forEach(e=>{ if(e[qid]&&counts[e[qid]]!==undefined) counts[e[qid]]++; });
+  const sorted = [...opcoes].sort((a,b)=>(counts[b]||0)-(counts[a]||0));
+
+  html += `<div class="result-section"><h3>${titulo}</h3>`;
+  sorted.forEach(op=>{
+    const c = counts[op]||0;
+    const pct = Math.round((c/n)*100);
+    html += `<div class="bar-item">
+      <div class="bar-label"><span class="nome">${op}</span><span class="pct">${pct}% (${c})</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${cor}"></div></div>
+    </div>`;
+  });
+  html += '</div>';
+  document.getElementById('results-body').innerHTML = html;
+}
+
+function confirmReset() {
+  if (confirm('Tem certeza? Todos os dados serão apagados permanentemente.')) {
+    data = { entrevistas:[], hoje:0, dataHoje:new Date().toDateString() };
+    saveData();
+    showScreen('screen-intro');
+    updateIntroStats();
+  }
+}
+
+loadData();
+updateIntroStats();
+</script>
+</body>
+</html>
